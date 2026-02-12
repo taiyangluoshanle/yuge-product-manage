@@ -202,6 +202,11 @@ const HomePage = () => {
                   product={product}
                   categories={categories}
                   onDelete={handleDeleteProduct}
+                  onUpdated={(updated) => {
+                    setProducts((prev) =>
+                      prev.map((p) => (p.id === updated.id ? updated : p))
+                    );
+                  }}
                 />
               ))}
 

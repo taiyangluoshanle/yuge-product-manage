@@ -12,12 +12,14 @@ interface ProductCardProps {
   product: Product;
   categories: Category[];
   onDelete?: (id: string) => Promise<void>;
+  onUpdated?: (product: Product) => void;
 }
 
 export const ProductCard = ({
   product,
   categories,
   onDelete,
+  onUpdated,
 }: ProductCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -156,6 +158,7 @@ export const ProductCard = ({
           product={product}
           categories={categories}
           onClose={() => setShowDetailModal(false)}
+          onUpdated={onUpdated}
         />
       )}
 
