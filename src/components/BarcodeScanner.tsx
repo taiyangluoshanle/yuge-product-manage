@@ -21,14 +21,14 @@ export const BarcodeScanner = ({
   const handleScanResult = useCallback(
     async (
       decodedText: string,
-      html5QrCode: { stop: () => Promise<void> }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      scanner: any
     ) => {
-      // 防止重复触发
       if (!isMountedRef.current || !isScanningRef.current) return;
       isScanningRef.current = false;
 
       try {
-        await html5QrCode.stop();
+        await scanner.stop();
       } catch (e) {
         console.error("Stop scanner error:", e);
       }
@@ -43,12 +43,11 @@ export const BarcodeScanner = ({
 
   useEffect(() => {
     isMountedRef.current = true;
-    let html5QrCode: { stop: () => Promise<void>; clear: () => void } | null =
-      null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let scannerInstance: any = null;
 
     const startScanner = async () => {
       try {
-        // 检查是否支持摄像头
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           setError("当前浏览器不支持摄像头，请使用手动输入");
           setIsStarting(false);
@@ -59,10 +58,11 @@ export const BarcodeScanner = ({
 
         if (!isMountedRef.current) return;
 
-        html5QrCode = new Html5Qrcode("barcode-reader") as unknown as typeof html5QrCode;
+        const html5QrCode = new Html5Qrcode("barcode-reader");
+        scannerInstance = html5QrCode;
         isScanningRef.current = true;
 
-        await (html5QrCode as ReturnType<typeof Html5Qrcode["prototype"]["start"]> & typeof html5QrCode)!.start(
+        await html5QrCode.start(
           { facingMode: "environment" },
           {
             fps: 10,
@@ -70,7 +70,7 @@ export const BarcodeScanner = ({
             aspectRatio: 1.777,
           },
           (decodedText: string) => {
-            handleScanResult(decodedText, html5QrCode!);
+            handleScanResult(decodedText, html5QrCode);
           },
           () => {
             // 忽略每帧扫描失败的回调
@@ -109,10 +109,10 @@ export const BarcodeScanner = ({
     return () => {
       isMountedRef.current = false;
       isScanningRef.current = false;
-      if (html5QrCode) {
-        html5QrCode.stop().catch(() => {});
+      if (scannerInstance) {
+        scannerInstance.stop().catch(() => {});
         try {
-          html5QrCode.clear();
+          scannerInstance.clear();
         } catch {
           // ignore
         }
