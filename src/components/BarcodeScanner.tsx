@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { X, Camera } from "lucide-react";
 
 interface BarcodeScannerProps {
@@ -13,20 +13,56 @@ export const BarcodeScanner = ({
   onClose,
 }: BarcodeScannerProps) => {
   const scannerRef = useRef<HTMLDivElement>(null);
-  const html5QrCodeRef = useRef<unknown>(null);
+  const isMountedRef = useRef(true);
+  const isScanningRef = useRef(false);
   const [error, setError] = useState<string>("");
+  const [isStarting, setIsStarting] = useState(true);
+
+  const handleScanResult = useCallback(
+    async (
+      decodedText: string,
+      html5QrCode: { stop: () => Promise<void> }
+    ) => {
+      // 防止重复触发
+      if (!isMountedRef.current || !isScanningRef.current) return;
+      isScanningRef.current = false;
+
+      try {
+        await html5QrCode.stop();
+      } catch (e) {
+        console.error("Stop scanner error:", e);
+      }
+
+      if (isMountedRef.current) {
+        onScanSuccess(decodedText);
+        onClose();
+      }
+    },
+    [onScanSuccess, onClose]
+  );
 
   useEffect(() => {
-    let scanner: { clear: () => Promise<void>; stop: () => Promise<void> } | null = null;
+    isMountedRef.current = true;
+    let html5QrCode: { stop: () => Promise<void>; clear: () => void } | null =
+      null;
 
     const startScanner = async () => {
       try {
-        const { Html5Qrcode } = await import("html5-qrcode");
-        const html5QrCode = new Html5Qrcode("barcode-reader");
-        html5QrCodeRef.current = html5QrCode;
-        scanner = html5QrCode as unknown as typeof scanner;
+        // 检查是否支持摄像头
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setError("当前浏览器不支持摄像头，请使用手动输入");
+          setIsStarting(false);
+          return;
+        }
 
-        await html5QrCode.start(
+        const { Html5Qrcode } = await import("html5-qrcode");
+
+        if (!isMountedRef.current) return;
+
+        html5QrCode = new Html5Qrcode("barcode-reader") as unknown as typeof html5QrCode;
+        isScanningRef.current = true;
+
+        await (html5QrCode as ReturnType<typeof Html5Qrcode["prototype"]["start"]> & typeof html5QrCode)!.start(
           { facingMode: "environment" },
           {
             fps: 10,
@@ -34,29 +70,55 @@ export const BarcodeScanner = ({
             aspectRatio: 1.777,
           },
           (decodedText: string) => {
-            onScanSuccess(decodedText);
-            html5QrCode.stop().catch(console.error);
-            onClose();
+            handleScanResult(decodedText, html5QrCode!);
           },
           () => {
-            // 忽略扫描失败的回调（每帧都会触发）
+            // 忽略每帧扫描失败的回调
           }
         );
+
+        if (isMountedRef.current) {
+          setIsStarting(false);
+        }
       } catch (err) {
         console.error("Scanner error:", err);
-        setError("无法启动摄像头，请检查摄像头权限设置");
+        if (isMountedRef.current) {
+          const errorMessage =
+            err instanceof Error ? err.message : String(err);
+
+          if (
+            errorMessage.includes("Permission") ||
+            errorMessage.includes("NotAllowed")
+          ) {
+            setError("摄像头权限被拒绝，请在浏览器设置中允许访问摄像头");
+          } else if (
+            errorMessage.includes("NotFound") ||
+            errorMessage.includes("DevicesNotFound")
+          ) {
+            setError("未检测到摄像头设备");
+          } else {
+            setError("无法启动摄像头，请检查权限设置或使用手动输入");
+          }
+          setIsStarting(false);
+        }
       }
     };
 
     startScanner();
 
     return () => {
-      if (scanner) {
-        scanner.stop().catch(console.error);
+      isMountedRef.current = false;
+      isScanningRef.current = false;
+      if (html5QrCode) {
+        html5QrCode.stop().catch(() => {});
+        try {
+          html5QrCode.clear();
+        } catch {
+          // ignore
+        }
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [handleScanResult]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
@@ -69,24 +131,41 @@ export const BarcodeScanner = ({
           onClick={onClose}
           className="rounded-full p-1 text-white hover:bg-white/20"
           aria-label="关闭扫描器"
+          tabIndex={0}
         >
           <X className="h-6 w-6" />
         </button>
       </div>
 
-      <div className="flex flex-1 items-center justify-center" ref={scannerRef}>
+      <div
+        className="flex flex-1 items-center justify-center"
+        ref={scannerRef}
+      >
         <div id="barcode-reader" className="w-full max-w-md" />
+        {isStarting && !error && (
+          <div className="absolute text-sm text-gray-300">
+            正在启动摄像头...
+          </div>
+        )}
       </div>
 
       {error && (
-        <div className="bg-red-600 px-4 py-3 text-center text-sm text-white">
-          {error}
+        <div className="space-y-3 bg-red-600 px-4 py-4 text-center">
+          <p className="text-sm text-white">{error}</p>
+          <button
+            onClick={onClose}
+            className="rounded-lg bg-white/20 px-4 py-2 text-sm text-white hover:bg-white/30"
+          >
+            关闭，手动输入条形码
+          </button>
         </div>
       )}
 
-      <div className="bg-black/80 px-4 py-4 text-center text-sm text-gray-300">
-        将条形码对准框内，自动识别
-      </div>
+      {!error && (
+        <div className="bg-black/80 px-4 py-4 text-center text-sm text-gray-300">
+          将条形码对准框内，自动识别
+        </div>
+      )}
     </div>
   );
 };
