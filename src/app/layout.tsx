@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "商品价格管理",
@@ -18,7 +19,7 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
     <html lang="zh-CN">
       <body>
         <div className="mx-auto min-h-screen max-w-lg bg-white pb-20">
-          {children}
+          <ErrorBoundary>{children}</ErrorBoundary>
         </div>
         <BottomNav />
       </body>

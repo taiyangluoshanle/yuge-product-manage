@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ScanBarcode, Save, Loader2 } from "lucide-react";
 import { createProduct, getCategories } from "@/lib/api";
-import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { safeParsePrice } from "@/lib/utils";
+import { ScannerWrapper } from "@/components/ScannerWrapper";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Toast } from "@/components/Toast";
 import type { Category, ProductFormData } from "@/lib/types";
 
 const AddProductPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [categories, setCategories] = useState<Category[]>([]);
   const [showScanner, setShowScanner] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -19,9 +21,12 @@ const AddProductPage = () => {
     type: "success" | "error";
   } | null>(null);
 
+  // 从 URL 参数读取条形码（扫码查价未找到商品时跳转过来）
+  const barcodeFromUrl = searchParams.get("barcode") || "";
+
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
-    barcode: "",
+    barcode: barcodeFromUrl,
     price: "",
     category_id: "",
     note: "",
@@ -61,7 +66,7 @@ const AddProductPage = () => {
       return;
     }
 
-    if (!formData.price || parseFloat(formData.price) <= 0) {
+    if (!formData.price || safeParsePrice(formData.price) <= 0) {
       setToast({ message: "请输入有效价格", type: "error" });
       return;
     }
@@ -223,7 +228,7 @@ const AddProductPage = () => {
 
       {/* 条形码扫描器 */}
       {showScanner && (
-        <BarcodeScanner
+        <ScannerWrapper
           onScanSuccess={handleScanSuccess}
           onClose={() => setShowScanner(false)}
         />

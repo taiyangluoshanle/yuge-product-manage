@@ -1,16 +1,24 @@
 import { supabase } from "./supabase";
+import { safeParsePrice, isPriceEqual } from "./utils";
 import type { Product, PriceHistory, Category, ProductFormData } from "./types";
 
 // ==================== 商品相关 ====================
 
+const PAGE_SIZE = 20;
+
 export const getProducts = async (
   search?: string,
-  categoryId?: string
-): Promise<Product[]> => {
+  categoryId?: string,
+  page = 0
+): Promise<{ data: Product[]; hasMore: boolean }> => {
+  const from = page * PAGE_SIZE;
+  const to = from + PAGE_SIZE;
+
   let query = supabase
     .from("products")
-    .select("*")
-    .order("updated_at", { ascending: false });
+    .select("*", { count: "exact" })
+    .order("updated_at", { ascending: false })
+    .range(from, to);
 
   if (search) {
     query = query.or(`name.ilike.%${search}%,barcode.ilike.%${search}%`);
@@ -20,9 +28,14 @@ export const getProducts = async (
     query = query.eq("category_id", categoryId);
   }
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   if (error) throw error;
-  return data || [];
+
+  const products = data || [];
+  const total = count || 0;
+  const hasMore = from + products.length < total;
+
+  return { data: products, hasMore };
 };
 
 export const getProductById = async (id: string): Promise<Product | null> => {
@@ -36,6 +49,19 @@ export const getProductById = async (id: string): Promise<Product | null> => {
   return data;
 };
 
+export const getProductByBarcode = async (
+  barcode: string
+): Promise<Product | null> => {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("barcode", barcode)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+};
+
 export const createProduct = async (
   formData: ProductFormData
 ): Promise<Product> => {
@@ -44,7 +70,7 @@ export const createProduct = async (
     .insert({
       name: formData.name,
       barcode: formData.barcode || null,
-      price: parseFloat(formData.price),
+      price: safeParsePrice(formData.price),
       category_id: formData.category_id || null,
       note: formData.note || null,
       image_url: formData.image_url || null,
@@ -61,10 +87,10 @@ export const updateProduct = async (
   formData: ProductFormData,
   oldPrice: number
 ): Promise<Product> => {
-  const newPrice = parseFloat(formData.price);
+  const newPrice = safeParsePrice(formData.price);
 
   // 如果价格变了，记录价格历史
-  if (newPrice !== oldPrice) {
+  if (!isPriceEqual(newPrice, oldPrice)) {
     await supabase.from("price_history").insert({
       product_id: id,
       old_price: oldPrice,

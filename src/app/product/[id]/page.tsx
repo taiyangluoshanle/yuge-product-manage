@@ -21,11 +21,11 @@ import {
   deleteProduct,
 } from "@/lib/api";
 import { ImageUpload } from "@/components/ImageUpload";
-import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { ScannerWrapper } from "@/components/ScannerWrapper";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Toast } from "@/components/Toast";
-import { formatPrice, formatDate } from "@/lib/utils";
+import { formatPrice, formatDate, safeParsePrice } from "@/lib/utils";
 import type { Product, Category, PriceHistory, ProductFormData } from "@/lib/types";
 
 const ProductDetailPage = () => {
@@ -102,7 +102,7 @@ const ProductDetailPage = () => {
       setToast({ message: "请输入商品名称", type: "error" });
       return;
     }
-    if (!formData.price || parseFloat(formData.price) <= 0) {
+    if (!formData.price || safeParsePrice(formData.price) <= 0) {
       setToast({ message: "请输入有效价格", type: "error" });
       return;
     }
@@ -405,7 +405,7 @@ const ProductDetailPage = () => {
 
       {/* 条形码扫描器 */}
       {showScanner && (
-        <BarcodeScanner
+        <ScannerWrapper
           onScanSuccess={handleScanSuccess}
           onClose={() => setShowScanner(false)}
         />

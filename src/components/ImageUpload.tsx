@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, Upload, X, Loader2 } from "lucide-react";
+import { Camera, X, Loader2 } from "lucide-react";
 import { uploadImage } from "@/lib/api";
+import { compressImage } from "@/lib/utils";
 
 interface ImageUploadProps {
   imageUrl: string;
@@ -18,9 +19,9 @@ export const ImageUpload = ({ imageUrl, onImageChange }: ImageUploadProps) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 校验文件大小（最大 5MB）
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError("图片大小不能超过 5MB");
+    // 校验文件大小（最大 10MB，压缩后会小很多）
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("图片大小不能超过 10MB");
       return;
     }
 
@@ -28,7 +29,9 @@ export const ImageUpload = ({ imageUrl, onImageChange }: ImageUploadProps) => {
     setUploadError("");
 
     try {
-      const url = await uploadImage(file);
+      // 先压缩图片再上传
+      const compressedFile = await compressImage(file, 800, 0.7);
+      const url = await uploadImage(compressedFile);
       onImageChange(url);
     } catch (err) {
       console.error("Upload error:", err);
