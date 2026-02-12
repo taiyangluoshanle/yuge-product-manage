@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ScanBarcode, Save, Loader2 } from "lucide-react";
 import { createProduct, getCategories } from "@/lib/api";
 import { safeParsePrice } from "@/lib/utils";
 import { ScannerWrapper } from "@/components/ScannerWrapper";
 import { ImageUpload } from "@/components/ImageUpload";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Toast } from "@/components/Toast";
 import type { Category, ProductFormData, ProductUnit } from "@/lib/types";
 import { PRODUCT_UNITS } from "@/lib/types";
 
-const AddProductPage = () => {
+const AddProductContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -260,6 +261,14 @@ const AddProductPage = () => {
         />
       )}
     </div>
+  );
+};
+
+const AddProductPage = () => {
+  return (
+    <Suspense fallback={<LoadingSpinner className="py-32" />}>
+      <AddProductContent />
+    </Suspense>
   );
 };
 
