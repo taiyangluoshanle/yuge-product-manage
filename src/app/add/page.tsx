@@ -8,7 +8,8 @@ import { safeParsePrice } from "@/lib/utils";
 import { ScannerWrapper } from "@/components/ScannerWrapper";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Toast } from "@/components/Toast";
-import type { Category, ProductFormData } from "@/lib/types";
+import type { Category, ProductFormData, ProductUnit } from "@/lib/types";
+import { PRODUCT_UNITS } from "@/lib/types";
 
 const AddProductPage = () => {
   const router = useRouter();
@@ -28,6 +29,7 @@ const AddProductPage = () => {
     name: "",
     barcode: barcodeFromUrl,
     price: "",
+    unit: "件" as ProductUnit,
     category_id: "",
     note: "",
     image_url: "",
@@ -149,7 +151,7 @@ const AddProductPage = () => {
           />
         </div>
 
-        {/* 价格 */}
+        {/* 价格 + 单位 */}
         <div className="space-y-1.5">
           <label
             htmlFor="price"
@@ -157,17 +159,32 @@ const AddProductPage = () => {
           >
             价格（元） <span className="text-red-500">*</span>
           </label>
-          <input
-            id="price"
-            type="number"
-            step="0.01"
-            min="0"
-            value={formData.price}
-            onChange={(e) => handleInputChange("price", e.target.value)}
-            placeholder="0.00"
-            className="input-field"
-            required
-          />
+          <div className="flex gap-2">
+            <input
+              id="price"
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.price}
+              onChange={(e) => handleInputChange("price", e.target.value)}
+              placeholder="0.00"
+              className="input-field flex-1"
+              required
+            />
+            <select
+              id="unit"
+              value={formData.unit}
+              onChange={(e) => handleInputChange("unit", e.target.value)}
+              className="input-field w-20 shrink-0"
+              aria-label="计量单位"
+            >
+              {PRODUCT_UNITS.map((u) => (
+                <option key={u} value={u}>
+                  /{u}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* 分类 */}

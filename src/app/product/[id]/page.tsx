@@ -26,7 +26,8 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Toast } from "@/components/Toast";
 import { formatPrice, formatDate, safeParsePrice } from "@/lib/utils";
-import type { Product, Category, PriceHistory, ProductFormData } from "@/lib/types";
+import type { Product, Category, PriceHistory, ProductFormData, ProductUnit } from "@/lib/types";
+import { PRODUCT_UNITS } from "@/lib/types";
 
 const ProductDetailPage = () => {
   const router = useRouter();
@@ -50,6 +51,7 @@ const ProductDetailPage = () => {
     name: "",
     barcode: "",
     price: "",
+    unit: "件" as ProductUnit,
     category_id: "",
     note: "",
     image_url: "",
@@ -77,6 +79,7 @@ const ProductDetailPage = () => {
         name: productData.name,
         barcode: productData.barcode || "",
         price: productData.price.toString(),
+        unit: productData.unit || "件",
         category_id: productData.category_id || "",
         note: productData.note || "",
         image_url: productData.image_url || "",
@@ -186,6 +189,7 @@ const ProductDetailPage = () => {
                     name: product.name,
                     barcode: product.barcode || "",
                     price: product.price.toString(),
+                    unit: product.unit || "件",
                     category_id: product.category_id || "",
                     note: product.note || "",
                     image_url: product.image_url || "",
@@ -279,16 +283,31 @@ const ProductDetailPage = () => {
               <label htmlFor="edit-price" className="block text-sm font-medium text-gray-700">
                 价格（元） <span className="text-red-500">*</span>
               </label>
-              <input
-                id="edit-price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price}
-                onChange={(e) => handleInputChange("price", e.target.value)}
-                className="input-field"
-                required
-              />
+              <div className="flex gap-2">
+                <input
+                  id="edit-price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price}
+                  onChange={(e) => handleInputChange("price", e.target.value)}
+                  className="input-field flex-1"
+                  required
+                />
+                <select
+                  id="edit-unit"
+                  value={formData.unit}
+                  onChange={(e) => handleInputChange("unit", e.target.value)}
+                  className="input-field w-20 shrink-0"
+                  aria-label="计量单位"
+                >
+                  {PRODUCT_UNITS.map((u) => (
+                    <option key={u} value={u}>
+                      /{u}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -338,7 +357,7 @@ const ProductDetailPage = () => {
               <div className="p-4">
                 <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
                 <p className="mt-2 text-3xl font-bold text-red-500">
-                  {formatPrice(product.price)}
+                  {formatPrice(product.price, product.unit)}
                 </p>
                 {category && (
                   <span className="mt-2 inline-block rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-600">

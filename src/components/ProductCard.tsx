@@ -77,7 +77,7 @@ export const ProductCard = ({
 
           <div className="shrink-0 text-right">
             <span className="text-lg font-bold text-red-500">
-              {formatPrice(product.price)}
+              {formatPrice(product.price, product.unit)}
             </span>
           </div>
         </Link>

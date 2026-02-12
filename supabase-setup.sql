@@ -17,6 +17,7 @@ CREATE TABLE products (
   name TEXT NOT NULL,
   barcode TEXT,
   price DECIMAL(10,2) NOT NULL DEFAULT 0,
+  unit TEXT NOT NULL DEFAULT '件',
   category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
   image_url TEXT,
   note TEXT,

@@ -17,8 +17,10 @@ export const isPriceEqual = (a: number, b: number): boolean => {
   return Math.abs(a - b) < 0.001;
 };
 
-export const formatPrice = (price: number): string => {
-  return `¥${price.toFixed(2)}`;
+export const formatPrice = (price: number, unit?: string): string => {
+  const priceStr = `¥${price.toFixed(2)}`;
+  if (!unit || unit === "件") return priceStr;
+  return `${priceStr}/${unit}`;
 };
 
 export const formatDate = (dateStr: string): string => {

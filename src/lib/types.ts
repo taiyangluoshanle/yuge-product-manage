@@ -1,8 +1,24 @@
+/** 计量单位 */
+export type ProductUnit = "件" | "斤" | "kg" | "g" | "瓶" | "袋" | "盒" | "包";
+
+/** 可选单位列表 */
+export const PRODUCT_UNITS: ProductUnit[] = [
+  "件",
+  "斤",
+  "kg",
+  "g",
+  "瓶",
+  "袋",
+  "盒",
+  "包",
+];
+
 export interface Product {
   id: string;
   name: string;
   barcode: string | null;
   price: number;
+  unit: ProductUnit;
   category_id: string | null;
   image_url: string | null;
   note: string | null;
@@ -29,6 +45,7 @@ export type ProductFormData = {
   name: string;
   barcode: string;
   price: string;
+  unit: ProductUnit;
   category_id: string;
   note: string;
   image_url: string;
