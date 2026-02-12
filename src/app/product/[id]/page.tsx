@@ -359,11 +359,18 @@ const ProductDetailPage = () => {
                 <p className="mt-2 text-3xl font-bold text-red-500">
                   {formatPrice(product.price, product.unit)}
                 </p>
-                {category && (
-                  <span className="mt-2 inline-block rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-600">
-                    {category.name}
-                  </span>
-                )}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {category && (
+                    <span className="inline-block rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-600">
+                      {category.name}
+                    </span>
+                  )}
+                  {product.unit && product.unit !== "件" && (
+                    <span className="inline-block rounded-full bg-orange-50 px-3 py-1 text-sm text-orange-600">
+                      按{product.unit}
+                    </span>
+                  )}
+                </div>
                 {product.barcode && (
                   <p className="mt-2 text-sm text-gray-500">
                     条形码: {product.barcode}
