@@ -30,7 +30,7 @@ export const ProductDetailModal = ({
   return (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center"
+        className="fixed inset-0 z-[55] flex items-end justify-center bg-black/50 sm:items-center"
         onClick={onClose}
         role="dialog"
         aria-label={`${product.name} 详情`}
@@ -53,7 +53,7 @@ export const ProductDetailModal = ({
           </div>
 
           {/* 内容 */}
-          <div className="max-h-[70vh] overflow-y-auto px-4 py-4">
+          <div className="max-h-[60vh] overflow-y-auto px-4 py-4">
             {/* 图片 */}
             <div className="mb-4 flex justify-center">
               {product.image_url ? (
@@ -121,7 +121,7 @@ export const ProductDetailModal = ({
           </div>
 
           {/* 底部操作 */}
-          <div className="border-t border-gray-100 px-4 py-3">
+          <div className="border-t border-gray-100 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3">
             <button
               onClick={handleGoToDetail}
               className="btn-primary w-full gap-1.5"
