@@ -94,7 +94,7 @@ export const ProductCard = ({
 
         {/* 商品信息 */}
         <div className="flex-1 overflow-hidden">
-          <h3 className="truncate text-sm font-medium text-gray-900">
+          <h3 className="text-sm font-medium leading-snug text-gray-900">
             {product.name}
           </h3>
           <div className="mt-0.5 flex flex-wrap gap-1">

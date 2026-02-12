@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ScanBarcode } from "lucide-react";
+import { ScanBarcode, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { getProducts, getCategories, deleteProduct, getProductByBarcode } from "@/lib/api";
+import type { SortOption } from "@/lib/api";
 import { SearchBar } from "@/components/SearchBar";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { ProductCard } from "@/components/ProductCard";
@@ -29,16 +30,18 @@ const HomePage = () => {
     type: "success" | "error";
   } | null>(null);
   const [showScanner, setShowScanner] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>("updated_at");
+  const [notFoundBarcode, setNotFoundBarcode] = useState<string | null>(null);
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // 首次加载 / 搜索 / 切换分类时重新加载
+  // 首次加载 / 搜索 / 切换分类 / 切换排序时重新加载
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
       setPage(0);
       const [productsResult, categoriesData] = await Promise.all([
-        getProducts(search || undefined, selectedCategory || undefined, 0),
+        getProducts(search || undefined, selectedCategory || undefined, 0, sortBy),
         getCategories(),
       ]);
       setProducts(productsResult.data);
@@ -50,7 +53,7 @@ const HomePage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [search, selectedCategory]);
+  }, [search, selectedCategory, sortBy]);
 
   // 加载更多
   const fetchMore = useCallback(async () => {
@@ -61,7 +64,8 @@ const HomePage = () => {
       const result = await getProducts(
         search || undefined,
         selectedCategory || undefined,
-        nextPage
+        nextPage,
+        sortBy
       );
       setProducts((prev) => [...prev, ...result.data]);
       setHasMore(result.hasMore);
@@ -71,7 +75,16 @@ const HomePage = () => {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, hasMore, page, search, selectedCategory]);
+  }, [isLoadingMore, hasMore, page, search, selectedCategory, sortBy]);
+
+  // 切换价格排序: 默认 -> 价格升序 -> 价格降序 -> 默认
+  const handleToggleSort = useCallback(() => {
+    setSortBy((prev) => {
+      if (prev === "updated_at") return "price_asc";
+      if (prev === "price_asc") return "price_desc";
+      return "updated_at";
+    });
+  }, []);
 
   // 下拉刷新
   const handleRefresh = useCallback(async () => {
@@ -97,16 +110,13 @@ const HomePage = () => {
   const handleScanSuccess = useCallback(
     async (barcode: string) => {
       setShowScanner(false);
+      setNotFoundBarcode(null);
       try {
         const product = await getProductByBarcode(barcode);
         if (product) {
           router.push(`/product/${product.id}`);
         } else {
-          setToast({ message: `未找到条形码 ${barcode} 的商品，是否去录入？`, type: "error" });
-          // 2秒后跳转到录入页
-          setTimeout(() => {
-            router.push(`/add?barcode=${encodeURIComponent(barcode)}`);
-          }, 2000);
+          setNotFoundBarcode(barcode);
         }
       } catch (err) {
         console.error("Scan search error:", err);
@@ -115,6 +125,13 @@ const HomePage = () => {
     },
     [router]
   );
+
+  // 跳转到录入页
+  const handleGoToAdd = useCallback(() => {
+    if (!notFoundBarcode) return;
+    router.push(`/add?barcode=${encodeURIComponent(notFoundBarcode)}`);
+    setNotFoundBarcode(null);
+  }, [notFoundBarcode, router]);
 
   // 搜索防抖
   useEffect(() => {
@@ -166,6 +183,26 @@ const HomePage = () => {
             />
           </div>
         )}
+        {/* 排序按钮 */}
+        <div className="mt-2 flex items-center gap-2">
+          <button
+            onClick={handleToggleSort}
+            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              sortBy !== "updated_at"
+                ? "bg-primary-100 text-primary-700"
+                : "bg-gray-100 text-gray-600"
+            }`}
+            aria-label="价格排序"
+            tabIndex={0}
+          >
+            {sortBy === "price_asc" && <ArrowUp className="h-3 w-3" />}
+            {sortBy === "price_desc" && <ArrowDown className="h-3 w-3" />}
+            {sortBy === "updated_at" && <ArrowUpDown className="h-3 w-3" />}
+            {sortBy === "updated_at" && "价格排序"}
+            {sortBy === "price_asc" && "价格从低到高"}
+            {sortBy === "price_desc" && "价格从高到低"}
+          </button>
+        </div>
       </header>
 
       {/* 商品列表 */}
@@ -230,6 +267,35 @@ const HomePage = () => {
           onScanSuccess={handleScanSuccess}
           onClose={() => setShowScanner(false)}
         />
+      )}
+
+      {/* 扫码未找到商品提示 */}
+      {notFoundBarcode && (
+        <div className="fixed inset-x-0 bottom-20 z-50 mx-4 animate-fade-in">
+          <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 shadow-lg">
+            <p className="text-sm font-medium text-orange-800">
+              未找到条形码 <span className="font-mono">{notFoundBarcode}</span> 的商品
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={handleGoToAdd}
+                className="flex-1 rounded-lg bg-primary-500 px-3 py-2 text-sm font-medium text-white active:bg-primary-600"
+                aria-label="去录入商品"
+                tabIndex={0}
+              >
+                去录入该商品
+              </button>
+              <button
+                onClick={() => setNotFoundBarcode(null)}
+                className="rounded-lg bg-gray-200 px-3 py-2 text-sm font-medium text-gray-700 active:bg-gray-300"
+                aria-label="关闭提示"
+                tabIndex={0}
+              >
+                关闭
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Toast 提示 */}

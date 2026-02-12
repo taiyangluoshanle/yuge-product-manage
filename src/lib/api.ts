@@ -6,19 +6,31 @@ import type { Product, PriceHistory, Category, ProductFormData } from "./types";
 
 const PAGE_SIZE = 20;
 
+export type SortOption = "updated_at" | "price_asc" | "price_desc";
+
 export const getProducts = async (
   search?: string,
   categoryId?: string,
-  page = 0
+  page = 0,
+  sort: SortOption = "updated_at"
 ): Promise<{ data: Product[]; hasMore: boolean }> => {
   const from = page * PAGE_SIZE;
   const to = from + PAGE_SIZE;
 
   let query = supabase
     .from("products")
-    .select("*", { count: "exact" })
-    .order("updated_at", { ascending: false })
-    .range(from, to);
+    .select("*", { count: "exact" });
+
+  // 排序
+  if (sort === "price_asc") {
+    query = query.order("price", { ascending: true });
+  } else if (sort === "price_desc") {
+    query = query.order("price", { ascending: false });
+  } else {
+    query = query.order("updated_at", { ascending: false });
+  }
+
+  query = query.range(from, to);
 
   if (search) {
     query = query.or(`name.ilike.%${search}%,barcode.ilike.%${search}%`);
