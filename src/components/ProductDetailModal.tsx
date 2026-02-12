@@ -92,9 +92,9 @@ export const ProductDetailModal = ({
                     {category.name}
                   </span>
                 )}
-                {product.unit && product.unit !== "件" && (
+                {product.unit && (
                   <span className="inline-block rounded-full bg-orange-50 px-3 py-1 text-sm text-orange-600">
-                    散装（{product.unit}）
+                    按{product.unit}
                   </span>
                 )}
               </div>

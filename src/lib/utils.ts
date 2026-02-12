@@ -19,7 +19,7 @@ export const isPriceEqual = (a: number, b: number): boolean => {
 
 export const formatPrice = (price: number, unit?: string): string => {
   const priceStr = `¥${price.toFixed(2)}`;
-  if (!unit || unit === "件") return priceStr;
+  if (!unit) return priceStr;
   return `${priceStr}/${unit}`;
 };
 
